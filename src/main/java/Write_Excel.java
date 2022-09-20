@@ -24,14 +24,21 @@ public class Write_Excel {
     public static XSSFWorkbook workbook;
     public static XSSFSheet con_sheet;
     public static XSSFSheet sql_sheet;
+    public static XSSFSheet task_sheet;
+
     //研发单号-负责人名字 的map
     public static Map<String, String> responsible;
     //行高
     public static final short rowHeight = 1024;
-    //要提取出来的大文件的路径列表
+    //要提取出来的大文件的路径列表 1.5版本已废弃
     public static List<String> big_files;
-
-    public Write_Excel() {
+    //要生成的总文件夹的路径
+    public static String firstDirPath;
+    //要生成的总SQL文件夹的路径 包含在 firstDir里
+    public static String sqlDirPath;
+    //对于同名的sql文件，用这个map记录这个名字出现了多少次
+    private static Map<String,Integer> nameCnt;
+    public Write_Excel(String file_date) {
         // 创建工作薄
         workbook = new XSSFWorkbook();
         responsible = new HashMap<String, String>();
@@ -39,7 +46,27 @@ public class Write_Excel {
         create_Sheet();
         //初始化大文件列表
         big_files = new ArrayList<>();
+        //初始化两个路径字符串 并生成两个文件夹
+
+        //文件夹名字和excel的名字
+        String name = "北京版本升级列表-" + file_date;
+        //新建文件夹
+        File directory = new File(name);
+        if (!directory.exists()) directory.mkdir();
+        //设置firstDir的路径
+        firstDirPath=directory.getPath();
+//        1.5 : 生成一个总的SQL文件夹 里面包含了n种sql类型的文件夹
+//        SQL文件->mysql
+//               ->oracle
+//               ->postgresql...
+        File sqlDir=new File(firstDirPath,"SQL文件");
+        if(!sqlDir.exists())sqlDir.mkdir();
+        sqlDirPath=sqlDir.getPath();
+
+        //初始化map
+        nameCnt=new HashMap<String,Integer>();
     }
+    public Write_Excel(){}
 
     public void create_config_sheet() {
         // 创建工作表
@@ -121,12 +148,74 @@ public class Write_Excel {
         }
     }
 
+//     任务类型	编号	标题	研发项目	负责人	状态	版本	应用模块	创建时间	创建人
+
+    public void create_task_sheet(){
+        //创建工作表
+        task_sheet=workbook.createSheet("任务清单");
+        //创建表头
+        XSSFRow taskHeadRow = task_sheet.createRow(0);
+
+        for(int i=0;i<22;i++){
+            String val=new String();
+            taskHeadRow.createCell(i).setCellStyle(cell_style(workbook, true));
+            switch (i) {
+                case 0:
+                    val = "任务类型";task_sheet.setColumnWidth(i, 10 * 256);break;
+                case 1:
+                    val = "编号";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 2:
+                    val = "标题";task_sheet.setColumnWidth(i, 13 * 256);break;
+                case 3:
+                    val = "研发项目";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 4:
+                    val = "负责人";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 5:
+                    val = "状态";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 6:
+                    val = "版本";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 7:
+                    val = "应用模块";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 8:
+                    val = "创建时间";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 9:
+                    val = "创建人";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 10:
+                    val = "开始时间";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 11:
+                    val = "截止时间";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 12:
+                    val = "优先级";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 13:
+                    val = "来源";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 14:
+                    val = "分类";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 15:
+                    val = "预估工时";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 16:
+                    val = "所属需求";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 17:
+                    val = "标签";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 18:
+                    val = "故事点";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 19:
+                    val = "设计负责人";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 20:
+                    val = "开发负责人";task_sheet.setColumnWidth(i, 15 * 256);break;
+                case 21:
+                    val = "测试负责人";task_sheet.setColumnWidth(i, 15 * 256);break;
+                default:
+            }
+            taskHeadRow.getCell(i).setCellValue(val);
+        }
+    }
     /**
-     * 创建一对新的sheet
+     * 创建3个新的sheet
      */
     public void create_Sheet() {
         create_config_sheet();
         create_sql_sheet();
+        create_task_sheet();
     }
 
     /**
@@ -182,6 +271,23 @@ public class Write_Excel {
         }
     }
 
+
+    /**
+     * 与上面两个insert方法相同
+     * @param list 提取出来的一整行元素
+     */
+    public void insert_task_sheet(List<HSSFRow> list){
+        for(HSSFRow row:list){
+            //新建一个行
+            task_sheet.createRow(task_sheet.getLastRowNum()+1);
+            //获取最新的行
+            XSSFRow sheetRow= task_sheet.getRow(task_sheet.getLastRowNum());
+            for(int i=0;i<row.getLastCellNum();i++){
+                HSSFCell cell=row.getCell(i);
+                sheetRow.createCell(i).setCellValue(cell.getStringCellValue());
+            }
+        }
+    }
 
     /**
      * 将这个xlsx里的内容解析一下，生成任务编号对应开发负责人的map
@@ -247,20 +353,33 @@ public class Write_Excel {
         return res;
     }
 
+    private String deal_same_name_sql_file(String name) {
+        int cnt= nameCnt.get(name)==null ? 0:nameCnt.get(name);
+        nameCnt.put(name,cnt+1);
+        if(cnt==0)return name;
+        else {
+            String res=new String();
+            for(int i=name.length()-1;i>=0;i--){
+                if(name.charAt(i)=='.'){
+                    res = name.substring(0,i)+"("+cnt+").sql";
+                    break;
+                }
+            }
+            return res;
+        }
+    }
     /**
      * 创建工作簿、扫描文档、解析文档内容、创建工作表、分别对两种工作表进行insert
      * 上述流程结束后，调用这个函数
      * 将完成的工作簿写入excel文件
+     * @param file_date 要生成的文件夹的后缀的那个数字  即 北京升级列表-********
      */
     public void write_to_file(String file_date) {
         //文件夹名字和excel的名字
         String name = "北京版本升级列表-" + file_date;
-        //新建文件夹
-        File directory = new File(name);
-        if (!directory.exists()) directory.mkdir();
 
-        String path = directory.getPath();
-        System.out.println(path);
+        String path = firstDirPath;
+        System.out.println("生成文件夹： "+path);
         //写入文件
         try {
             workbook.write(new FileOutputStream(new File(path, name + ".xlsx")));
@@ -277,7 +396,6 @@ public class Write_Excel {
         System.out.println("大文件：" + path);
     }
 
-    // TODO: 2022/9/1 修改这一个方法，让它能正常把文件复制出来
     // TODO: 2022/9/5 看看现场那边是否需要将每个sql文件放到文件夹里
     public static void generate_big_files(String directory_path) throws IOException {
         for (String path : big_files) {
@@ -300,6 +418,34 @@ public class Write_Excel {
                 destChannel.close();
             }
 
+        }
+    }
+
+    /**
+     * 生成sql文件到指定目录下，这个目录是它的sql类型
+     * @param sqlType sql类型
+     * @param sqlPath sql源文件的地址
+     * @throws IOException
+     */
+    // TODO: 2022/9/20 处理 生成同名文件的问题，对于同名文件 在后面加（1）（2）这样子
+    public void generate_sql_files(String sqlType,String sqlPath) throws IOException {
+        //这个sql类型的文件夹 若不存在则创建文件夹
+        File singleTypeDir=new File(sqlDirPath,sqlType);
+        if(!singleTypeDir.exists())singleTypeDir.mkdir();
+        //源文件
+        File source=new File(sqlPath);
+        //目标文件
+        File dest=new File(singleTypeDir.getPath(),deal_same_name_sql_file(source.getName()));
+
+        FileChannel sourceChannel = null;
+        FileChannel destChannel = null;
+        try {
+            sourceChannel = new FileInputStream(source).getChannel();
+            destChannel = new FileOutputStream(dest).getChannel();
+            destChannel.transferFrom(sourceChannel, 0, sourceChannel.size());
+        } finally {
+            sourceChannel.close();
+            destChannel.close();
         }
     }
 }
