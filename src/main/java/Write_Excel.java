@@ -30,8 +30,7 @@ public class Write_Excel {
     public static Map<String, String> responsible;
     //行高
     public static final short rowHeight = 1024;
-    //要提取出来的大文件的路径列表 1.5版本已废弃
-    public static List<String> big_files;
+
     //要生成的总文件夹的路径
     public static String firstDirPath;
     //要生成的总SQL文件夹的路径 包含在 firstDir里
@@ -44,8 +43,6 @@ public class Write_Excel {
         responsible = new HashMap<String, String>();
         //创建工作表
         create_Sheet();
-        //初始化大文件列表
-        big_files = new ArrayList<>();
         //初始化两个路径字符串 并生成两个文件夹
 
         //文件夹名字和excel的名字
@@ -384,40 +381,9 @@ public class Write_Excel {
         try {
             workbook.write(new FileOutputStream(new File(path, name + ".xlsx")));
             workbook.close();
-            generate_big_files(path);
         } catch (Exception ex) {
             System.out.println("name");
             System.out.println(ex.getMessage());
-        }
-    }
-
-    public static void insert_big_files(String path) {
-        big_files.add(path);
-        System.out.println("大文件：" + path);
-    }
-
-    // TODO: 2022/9/5 看看现场那边是否需要将每个sql文件放到文件夹里
-    public static void generate_big_files(String directory_path) throws IOException {
-        for (String path : big_files) {
-            //获取源文件内容
-            File source = new File(path);
-            //同步源文件和要生成的文件的名字
-            String name = source.getName();
-            //获取父文件夹名字（sql类型），后续在对应sql文件名前加上sql类型
-            File parent = source.getParentFile();
-
-            File dest = new File(directory_path, parent.getName() + "-" + name);
-            FileChannel sourceChannel = null;
-            FileChannel destChannel = null;
-            try {
-                sourceChannel = new FileInputStream(source).getChannel();
-                destChannel = new FileOutputStream(dest).getChannel();
-                destChannel.transferFrom(sourceChannel, 0, sourceChannel.size());
-            } finally {
-                sourceChannel.close();
-                destChannel.close();
-            }
-
         }
     }
 
