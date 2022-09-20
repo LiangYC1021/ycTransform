@@ -22,7 +22,7 @@ public class APP {
     }
 
     public static void Run() {
-        excel = new Write_Excel();
+
         //压缩包解压后的文件夹名
         String path = new String(zip_path.substring(0, zip_path.length() - 4));
         try {
@@ -32,10 +32,6 @@ public class APP {
         }
 
         File file = new File(path);        //获取其file对象
-        File[] fs = file.listFiles();    //遍历path下的文件和目录，放在File数组中
-        for (File dir : fs) {                    //遍历File[]数组
-            enter_directory(dir);
-        }
         String file_date = new String();
         for (int i = path.length() - 1; i >= 0; i--) {
             if (path.charAt(i) == '-') {
@@ -43,6 +39,12 @@ public class APP {
                 break;
             }
         }
+        excel = new Write_Excel(file_date);
+        File[] fs = file.listFiles();    //遍历path下的文件和目录，放在File数组中
+        for (File dir : fs) {                    //遍历File[]数组
+            enter_directory(dir);
+        }
+
         excel.write_to_file(file_date);
         System.out.println("Excel generated successfully!");
     }
@@ -77,11 +79,26 @@ public class APP {
                         Read_SQL read_sql = new Read_SQL();
                         read_sql.parseSQLFile(typeName, sql.getPath());
                         excel.insert_sql_sheet(read_sql.getTotalList());
+
+                        //1.5版本 生成对应的sql文件附件
+                        try {
+                            excel.generate_sql_files(typeName,sql.getPath());
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+
                     }
                 }
             } else if ("任务清单".equals(f.getName())) {
                 for (File xlsx : f.listFiles()) {
                     excel.set_hash_map(xlsx);
+                    Read_TaskList read_taskList=new Read_TaskList();
+                    try {
+                        read_taskList.searchExcelXlsx(xlsx.getPath());
+                        excel.insert_task_sheet(read_taskList.getTotalList());
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
         }

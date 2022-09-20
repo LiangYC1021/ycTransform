@@ -47,7 +47,6 @@ public class Read_SQL {
         } else {
             String tmp=sqlFile.getParentFile().getName()+"-"+fileName;
             totalList.add("文件长度为： " + content.length() + " 已超出最大长度限制\n具体内容详见附件:"+tmp);
-            Write_Excel.insert_big_files(fileUrl);
         }
 
 //        输出测试
